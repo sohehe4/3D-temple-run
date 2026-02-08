@@ -1,0 +1,29 @@
+//binary-exporter.js
+
+tiled.registerMapFormat("bin", {
+    name: "Raw Binary Tilemap",
+    extension: "bin",
+    write: function(map, fileName) {
+        const fs = require("fs");
+        const layer = map.layers[0]; // 取第一个瓦片层
+        const width = map.width;
+        const height = map.height;
+        const buffer = new ArrayBuffer(4+4 + width*height);
+        const view = new DataView(buffer);
+        // 写入宽高（小端，适配嵌入式）
+        view.setUint32(0, width, true);
+        view.setUint32(4, height, true);
+        // 写入瓦片数据（y行x列，匹配[Y][X]数组）
+        let offset = 8;
+        for (let y=0; y<height; y++) {
+            for (let x=0; x<width; x++) {
+                const tileId = layer.cellAt(x, y).tileId || 0;
+                view.setUint8(offset++, tileId & 0xFF); // 确保8位
+            }
+        }
+        fs.writeFileSync(fileName, Buffer.from(buffer));
+    }
+});
+
+
+
